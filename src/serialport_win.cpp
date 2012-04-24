@@ -47,6 +47,7 @@ void EIO_Open(uv_work_t* req) {
   }
 
   dcb.fBinary = true;
+  dcb.fDtrControl = DTR_CONTROL_DISABLE;
   dcb.BaudRate = data->baudRate;
   dcb.ByteSize = data->dataBits;
   switch(data->parity) {
