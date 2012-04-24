@@ -30,7 +30,7 @@ void ErrorCodeToString(const char* prefix, int errorCode, char *errorStr) {
     0,
     NULL,
     OPEN_EXISTING,
-    FILE_FLAG_OVERLAPPED,
+    0,
     NULL);
   if (file == INVALID_HANDLE_VALUE) {
     char temp[100];
@@ -112,25 +112,10 @@ public:
 void EIO_WatchPort(uv_work_t* req) {
   WatchPortBaton* data = static_cast<WatchPortBaton*>(req->data);
 
-  OVERLAPPED osRead = { 0 };
-  osRead.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
   while(true){
-    if(!ReadFile(data->fd, data->buffer, 100, &data->bytesRead, &osRead) && GetLastError() != ERROR_IO_PENDING) {
+    if(!ReadFile(data->fd, data->buffer, 100, &data->bytesRead, NULL)) {
       data->errorCode = GetLastError();
       ErrorCodeToString("ReadFile", GetLastError(), data->errorString);
-      return;
-    }
-    if(data->bytesRead > 0) {
-      return;
-    }
-    if(WaitForSingleObject(osRead.hEvent, INFINITE) != WAIT_OBJECT_0) {
-      data->errorCode = GetLastError();
-      ErrorCodeToString("Waiting for overlapped results", GetLastError(), data->errorString);
-      return;
-    }
-    if(!GetOverlappedResult((HANDLE)data->fd, &osRead, &data->bytesRead, FALSE)) {
-      data->errorCode = GetLastError();
-      ErrorCodeToString("getting overlapped results", GetLastError(), data->errorString);
       return;
     }
     if(data->bytesRead > 0) {
@@ -194,24 +179,12 @@ void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8:
   WriteBaton* data = static_cast<WriteBaton*>(req->data);
 
   DWORD bytesWritten;
-  OVERLAPPED osWriter = { 0 };
-  osWriter.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
-  if(!WriteFile((HANDLE)data->fd, data->bufferData, data->bufferLength, &bytesWritten, &osWriter) && GetLastError() != ERROR_IO_PENDING) {
+  if(!WriteFile((HANDLE)data->fd, data->bufferData, data->bufferLength, &bytesWritten, NULL)) {
     ErrorCodeToString("Writing from COM port", GetLastError(), data->errorString);
-    return;
-  }
-  if(WaitForSingleObject(osWriter.hEvent, INFINITE) != WAIT_OBJECT_0) {
-    ErrorCodeToString("Waiting for overlapped results", GetLastError(), data->errorString);
-    return;
-  }
-  if(!GetOverlappedResult((HANDLE)data->fd, &osWriter, &bytesWritten, FALSE)) {
-    ErrorCodeToString("getting overlapped results", GetLastError(), data->errorString);
     return;
   }
 
   data->result = bytesWritten;
-
-  CloseHandle(osWriter.hEvent);
 }
 
 void EIO_Close(uv_work_t* req) {
