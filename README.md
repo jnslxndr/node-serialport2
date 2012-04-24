@@ -61,6 +61,7 @@ __Arguments__
     * dataBits - The data bits [default: 8]
     * parity - The parity, can be (none, odd, even) [default: 'none']
     * stopBits - The number of stop bits, can be (1, 1.5, 2) [default: 1]
+    * flowControl - Enable flow control (true, false) [default: false]
   * callback(err) - Callback called after opening the port.
 
 ### write(buffer, [callback])

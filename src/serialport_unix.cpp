@@ -11,6 +11,7 @@
 int ToBaudConstant(int baudRate);
 int ToDataBitsConstant(int dataBits);
 int ToStopBitsConstant(SerialPortStopBits stopBits);
+int ToFlowControlConstant(bool flowControl);
 
 void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> errorCallback) {
 
@@ -63,6 +64,10 @@ int ToDataBitsConstant(int dataBits) {
   return -1;
 }
 
+int ToFlowControlConstant(bool flowControl) {
+  return flowControl ? CRTSCTS : 0;
+}
+
 void EIO_Open(uv_work_t* req) {
   OpenBaton* data = static_cast<OpenBaton*>(req->data);
 
@@ -71,12 +76,18 @@ void EIO_Open(uv_work_t* req) {
     sprintf(data->errorString, "Invalid baud rate setting %d", data->baudRate);
     return;
   }
+
   int dataBits = ToDataBitsConstant(data->dataBits);
   if(dataBits == -1) {
     sprintf(data->errorString, "Invalid data bits setting %d", data->dataBits);
     return;
   }
-  int flowControl = 0;
+
+  int flowControl = ToFlowControlConstant(data->flowControl);
+  if(flowControl == -1) {
+    sprintf(data->errorString, "Invalid flow control setting %d", data->flowControl);
+    return;
+  }
 
   int flags = (O_RDWR | O_NOCTTY | O_NONBLOCK | O_NDELAY);
   int fd = open(data->path, flags);
