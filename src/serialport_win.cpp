@@ -1,7 +1,10 @@
 
 #include "serialport.h"
+#include <list>
 
 #ifdef WIN32
+
+std::list<int> g_closingHandles;
 
 void ErrorCodeToString(const char* prefix, int errorCode, char *errorStr) {
   switch(errorCode) {
@@ -100,6 +103,7 @@ public:
   DWORD bytesRead;
   char buffer[100];
   char errorString[1000];
+  DWORD errorCode;
   v8::Persistent<v8::Value> dataCallback;
   v8::Persistent<v8::Value> errorCallback;
 };
@@ -111,6 +115,7 @@ void EIO_WatchPort(uv_work_t* req) {
   osRead.hEvent = CreateEvent(NULL, TRUE, FALSE, NULL);
   while(true){
     if(!ReadFile(data->fd, data->buffer, 100, &data->bytesRead, &osRead) && GetLastError() != ERROR_IO_PENDING) {
+      data->errorCode = GetLastError();
       ErrorCodeToString("ReadFile", GetLastError(), data->errorString);
       return;
     }
@@ -118,10 +123,12 @@ void EIO_WatchPort(uv_work_t* req) {
       return;
     }
     if(WaitForSingleObject(osRead.hEvent, INFINITE) != WAIT_OBJECT_0) {
+      data->errorCode = GetLastError();
       ErrorCodeToString("Waiting for overlapped results", GetLastError(), data->errorString);
       return;
     }
     if(!GetOverlappedResult((HANDLE)data->fd, &osRead, &data->bytesRead, FALSE)) {
+      data->errorCode = GetLastError();
       ErrorCodeToString("getting overlapped results", GetLastError(), data->errorString);
       return;
     }
@@ -131,14 +138,35 @@ void EIO_WatchPort(uv_work_t* req) {
   }
 }
 
+bool IsClosingHandle(int fd) {
+  for(std::list<int>::iterator it=g_closingHandles.begin(); it!=g_closingHandles.end(); it++) {
+    if(fd == *it) {
+      g_closingHandles.remove(fd);
+      return true;
+    }
+  }
+  return false;
+}
+
 void EIO_AfterWatchPort(uv_work_t* req) {
+  uv_ref(uv_default_loop());
   WatchPortBaton* data = static_cast<WatchPortBaton*>(req->data);
   if(data->bytesRead > 0) {
     v8::Handle<v8::Value> argv[1];
     argv[0] = node::Buffer::New(data->buffer, data->bytesRead)->handle_;
     v8::Function::Cast(*data->dataCallback)->Call(v8::Context::GetCurrent()->Global(), 1, argv);
+  } else if(data->errorCode > 0) {
+    if(data->errorCode == ERROR_INVALID_HANDLE && IsClosingHandle((int)data->fd)) {
+      goto cleanup;
+    } else {
+      v8::Handle<v8::Value> argv[1];
+      argv[0] = v8::Exception::Error(v8::String::New(data->errorString));
+      v8::Function::Cast(*data->errorCallback)->Call(v8::Context::GetCurrent()->Global(), 1, argv);
+    }
   }
   AfterOpenSuccess((int)data->fd, data->dataCallback, data->errorCallback);
+
+cleanup:
   data->dataCallback.Dispose();
   data->errorCallback.Dispose();
   delete data;
@@ -147,14 +175,18 @@ void EIO_AfterWatchPort(uv_work_t* req) {
 
 void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> errorCallback) {
   WatchPortBaton* baton = new WatchPortBaton();
+  memset(baton, 0, sizeof(WatchPortBaton));
   baton->fd = (HANDLE)fd;
   baton->dataCallback = v8::Persistent<v8::Value>::New(dataCallback);
   baton->errorCallback = v8::Persistent<v8::Value>::New(errorCallback);
 
   uv_work_t* req = new uv_work_t();
   req->data = baton;
+
+  // after we queue the work we unref the loop so that we don't stop the process from exiting
+  // if the user hasn't closed the port. See also uv_ref in EIO_AfterWatchPort this will keep the unref/ref count equal.
   uv_queue_work(uv_default_loop(), req, EIO_WatchPort, EIO_AfterWatchPort);
-  //uv_unref(uv_default_loop());
+  uv_unref(uv_default_loop());
 }
 
 /*static*/ void EIO_Write(uv_work_t* req) {
@@ -179,6 +211,16 @@ void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8:
   data->result = bytesWritten;
 
   CloseHandle(osWriter.hEvent);
+}
+
+void EIO_Close(uv_work_t* req) {
+  CloseBaton* data = static_cast<CloseBaton*>(req->data);
+
+  g_closingHandles.push_back(data->fd);
+  if(!CloseHandle((HANDLE)data->fd)) {
+    ErrorCodeToString("closing connection", GetLastError(), data->errorString);
+    return;
+  }
 }
 
 #endif

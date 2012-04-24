@@ -119,7 +119,44 @@ void EIO_AfterWrite(uv_work_t* req) {
 v8::Handle<v8::Value> Close(const v8::Arguments& args) {
   v8::HandleScope scope;
 
+  // file descriptor
+  if(!args[0]->IsInt32()) {
+    return scope.Close(v8::ThrowException(v8::Exception::TypeError(v8::String::New("First argument must be an int"))));
+  }
+  int fd = args[0]->ToInt32()->Int32Value();
+
+  // callback
+  if(!args[1]->IsFunction()) {
+    return scope.Close(v8::ThrowException(v8::Exception::TypeError(v8::String::New("Second argument must be a function"))));
+  }
+  v8::Local<v8::Value> callback = args[1];
+
+  CloseBaton* baton = new CloseBaton();
+  memset(baton, 0, sizeof(CloseBaton));
+  baton->fd = fd;
+  baton->callback = v8::Persistent<v8::Value>::New(callback);
+
+  uv_work_t* req = new uv_work_t();
+  req->data = baton;
+  uv_queue_work(uv_default_loop(), req, EIO_Close, EIO_AfterClose);
+
   return scope.Close(v8::Undefined());
+}
+
+void EIO_AfterClose(uv_work_t* req) {
+  CloseBaton* data = static_cast<CloseBaton*>(req->data);
+
+  v8::Handle<v8::Value> argv[1];
+  if(data->errorString[0]) {
+    argv[0] = v8::Exception::Error(v8::String::New(data->errorString));
+  } else {
+    argv[0] = v8::Undefined();
+  }
+  v8::Function::Cast(*data->callback)->Call(v8::Context::GetCurrent()->Global(), 1, argv);
+
+  data->callback.Dispose();
+  delete data;
+  delete req;
 }
 
 SerialPortParity ToParityEnum(v8::Handle<v8::String>& v8str) {

@@ -3,6 +3,8 @@
 var SerialPort = require('../').SerialPort;
 var assert = require('assert');
 
+var keepAlive = setTimeout(function () {console.log('timeout');}, 10000);
+
 var sp = new SerialPort();
 var readData = '';
 sp.on('data', function (data) {
@@ -16,6 +18,8 @@ sp.on('data', function (data) {
   }
   if (readData === "HELLO WORLD") {
     sp.close();
+    clearTimeout(keepAlive);
+    console.log('done');
   }
 });
 sp.on('error', function (err) {
@@ -27,5 +31,3 @@ sp.open("COM4", {
   parity: 'none',
   stopBits: 1
 });
-
-setTimeout(function () {console.log('done');}, 100000);

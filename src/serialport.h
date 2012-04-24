@@ -23,11 +23,16 @@ enum SerialPortStopBits {
 v8::Handle<v8::Value> Open(const v8::Arguments& args);
 void EIO_Open(uv_work_t* req);
 void EIO_AfterOpen(uv_work_t* req);
+void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> errorCallback);
+
 v8::Handle<v8::Value> Write(const v8::Arguments& args);
 void EIO_Write(uv_work_t* req);
 void EIO_AfterWrite(uv_work_t* req);
+
 v8::Handle<v8::Value> Close(const v8::Arguments& args);
-void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> errorCallback);
+void EIO_Close(uv_work_t* req);
+void EIO_AfterClose(uv_work_t* req);
+
 SerialPortParity ToParityEnum(v8::Handle<v8::String>& str);
 SerialPortStopBits ToStopBitEnum(double stopBits);
 
@@ -53,6 +58,13 @@ public:
   v8::Persistent<v8::Object> buffer;
   v8::Persistent<v8::Value> callback;
   int result;
+  char errorString[1024];
+};
+
+struct CloseBaton {
+public:
+  int fd;
+  v8::Persistent<v8::Value> callback;
   char errorString[1024];
 };
 
