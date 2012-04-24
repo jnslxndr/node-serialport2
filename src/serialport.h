@@ -25,6 +25,11 @@ enum SerialPortStopBits {
   SERIALPORT_STOPBITS_TWO = 3
 };
 
+enum IoctlField {
+  SERIALPORT_IOCTL_UNKNOWN,
+  SERIALPORT_IOCTL_DTR
+};
+
 v8::Handle<v8::Value> List(const v8::Arguments& args);
 void EIO_List(uv_work_t* req);
 void EIO_AfterList(uv_work_t* req);
@@ -42,8 +47,13 @@ v8::Handle<v8::Value> Close(const v8::Arguments& args);
 void EIO_Close(uv_work_t* req);
 void EIO_AfterClose(uv_work_t* req);
 
+v8::Handle<v8::Value> Ioctl(const v8::Arguments& args);
+void EIO_Ioctl(uv_work_t* req);
+void EIO_AfterIoctl(uv_work_t* req);
+
 SerialPortParity ToParityEnum(const v8::Handle<v8::String>& str);
 SerialPortStopBits ToStopBitEnum(double stopBits);
+IoctlField ToIoctlField(const v8::Handle<v8::String>& v8str);
 
 struct OpenBaton {
 public:
@@ -75,6 +85,15 @@ struct CloseBaton {
 public:
   int fd;
   v8::Persistent<v8::Value> callback;
+  char errorString[1024];
+};
+
+struct IoctlBaton {
+public:
+  int fd;
+  v8::Persistent<v8::Value> callback;
+  IoctlField field;
+  int value;
   char errorString[1024];
 };
 

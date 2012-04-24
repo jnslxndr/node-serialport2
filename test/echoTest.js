@@ -15,7 +15,7 @@ var sp = new SerialPort();
 sp.on('data', function (data) {
   readData += data.toString();
   console.log('read buffer:', readData);
-  if (readData === 'READY') {
+  if (readData.indexOf('READY') >= 0) {
     readData = '';
     sp.write("hello world", function (err, bytesWritten) {
       console.log('bytes written:', bytesWritten);
@@ -38,6 +38,7 @@ sp.on('error', function (err) {
 
 sp.on('open', function() {
   console.log('port opened... Press reset on the Arduino.');
+  //sp.toggleDTR();
 });
 
 sp.open(portName, {

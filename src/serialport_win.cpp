@@ -114,6 +114,7 @@ void EIO_WatchPort(uv_work_t* req) {
   WatchPortBaton* data = static_cast<WatchPortBaton*>(req->data);
 
   while(true){
+    Sleep(10);
     if(!ReadFile(data->fd, data->buffer, 100, &data->bytesRead, NULL)) {
       data->errorCode = GetLastError();
       ErrorCodeToString("ReadFile", GetLastError(), data->errorString);
@@ -195,6 +196,21 @@ void EIO_Close(uv_work_t* req) {
   if(!CloseHandle((HANDLE)data->fd)) {
     ErrorCodeToString("closing connection", GetLastError(), data->errorString);
     return;
+  }
+}
+
+void EIO_Ioctl(uv_work_t* req) {
+  IoctlBaton* data = static_cast<IoctlBaton*>(req->data);
+
+  switch(data->field) {
+  case SERIALPORT_IOCTL_DTR:
+    SetCommBreak((HANDLE)data->fd);
+    EscapeCommFunction((HANDLE)data->fd, data->value ? SETDTR : CLRDTR);
+    break;
+
+  default:
+    sprintf(data->errorString, "Invalid IOCTL field");
+    break;
   }
 }
 

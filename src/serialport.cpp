@@ -214,6 +214,63 @@ void EIO_AfterList(uv_work_t* req) {
   delete req;
 }
 
+v8::Handle<v8::Value> Ioctl(const v8::Arguments& args) {
+  v8::HandleScope scope;
+
+  // file descriptor
+  if(!args[0]->IsInt32()) {
+    return scope.Close(v8::ThrowException(v8::Exception::TypeError(v8::String::New("First argument must be an int"))));
+  }
+  int fd = args[0]->ToInt32()->Int32Value();
+
+  // fieldName
+  if(!args[1]->IsString()) {
+    return scope.Close(v8::ThrowException(v8::Exception::TypeError(v8::String::New("Second argument must be a string"))));
+  }
+  v8::Local<v8::String> fieldName = args[1]->ToString();
+
+  // value
+  if(!args[2]->IsInt32()) {
+    return scope.Close(v8::ThrowException(v8::Exception::TypeError(v8::String::New("Third argument must be a int"))));
+  }
+  int val = args[2]->ToInt32()->Int32Value();
+
+  // callback
+  if(!args[3]->IsFunction()) {
+    return scope.Close(v8::ThrowException(v8::Exception::TypeError(v8::String::New("Fourth argument must be a function"))));
+  }
+  v8::Local<v8::Value> callback = args[3];
+
+  IoctlBaton* baton = new IoctlBaton();
+  memset(baton, 0, sizeof(IoctlBaton));
+  baton->fd = fd;
+  baton->field = ToIoctlField(fieldName);
+  baton->value = val;
+  baton->callback = v8::Persistent<v8::Value>::New(callback);
+
+  uv_work_t* req = new uv_work_t();
+  req->data = baton;
+  uv_queue_work(uv_default_loop(), req, EIO_Ioctl, EIO_AfterIoctl);
+
+  return scope.Close(v8::Undefined());
+}
+
+void EIO_AfterIoctl(uv_work_t* req) {
+  IoctlBaton* data = static_cast<IoctlBaton*>(req->data);
+
+  v8::Handle<v8::Value> argv[1];
+  if(data->errorString[0]) {
+    argv[0] = v8::Exception::Error(v8::String::New(data->errorString));
+  } else {
+    argv[0] = v8::Undefined();
+  }
+  v8::Function::Cast(*data->callback)->Call(v8::Context::GetCurrent()->Global(), 1, argv);
+
+  data->callback.Dispose();
+  delete data;
+  delete req;
+}
+
 SerialPortParity ToParityEnum(const v8::Handle<v8::String>& v8str) {
   v8::String::AsciiValue str(v8str);
   if(!strcasecmp(*str, "none")) {
@@ -244,6 +301,14 @@ SerialPortStopBits ToStopBitEnum(double stopBits) {
   return SERIALPORT_STOPBITS_ONE;
 }
 
+IoctlField ToIoctlField(const v8::Handle<v8::String>& v8str) {
+  v8::String::AsciiValue str(v8str);
+  if(!strcasecmp(*str, "dtr")) {
+    return SERIALPORT_IOCTL_DTR;
+  }
+  return SERIALPORT_IOCTL_UNKNOWN;
+}
+
 extern "C" {
   void init (v8::Handle<v8::Object> target) 
   {
@@ -252,6 +317,7 @@ extern "C" {
     NODE_SET_METHOD(target, "write", Write);
     NODE_SET_METHOD(target, "close", Close);
     NODE_SET_METHOD(target, "list", List);
+    NODE_SET_METHOD(target, "ioctl", Ioctl);
   }
 }
 
