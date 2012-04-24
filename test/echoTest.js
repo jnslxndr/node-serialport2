@@ -28,6 +28,10 @@ sp.on('data', function (data) {
   }
 });
 
+sp.on('close', function (err) {
+  console.log('port closed');
+});
+
 sp.on('error', function (err) {
   throw err;
 });
