@@ -183,7 +183,7 @@ void EIO_Close(uv_work_t* req) {
 }
 
 void EIO_List(uv_work_t* req) {
-  ListBaton* data = static_cast<ListBaton*>(req->data);
+  // This code exists in javascript for unix platforms
 }
 
 #endif

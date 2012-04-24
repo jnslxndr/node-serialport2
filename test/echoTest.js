@@ -3,9 +3,12 @@
 var SerialPort = require('../').SerialPort;
 var assert = require('assert');
 
-var keepAlive = setTimeout(function () {console.log('timeout');}, 10000);
+var keepAlive = setTimeout(function () {
+  console.log('timeout');
+  process.exit();
+}, 10000);
 
-var portName = (process.platform == 'win32') ? 'COM4' : '/dev/master';
+var portName = (process.platform == 'win32') ? 'COM4' : '/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A800eFN5-if00-port0';
 
 var readData = '';
 var sp = new SerialPort();
@@ -27,6 +30,10 @@ sp.on('data', function (data) {
 
 sp.on('error', function (err) {
   throw err;
+});
+
+sp.on('open', function() {
+  console.log('port opened... Press reset on the Arduino.');
 });
 
 sp.open(portName, {
