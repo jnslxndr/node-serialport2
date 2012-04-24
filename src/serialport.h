@@ -5,6 +5,8 @@
 #include <node.h>
 #include <v8.h>
 #include <node_buffer.h>
+#include <list>
+#include <string>
 
 enum SerialPortParity {
   SERIALPORT_PARITY_NONE = 1,
@@ -19,6 +21,10 @@ enum SerialPortStopBits {
   SERIALPORT_STOPBITS_ONE_FIVE = 2,
   SERIALPORT_STOPBITS_TWO = 3
 };
+
+v8::Handle<v8::Value> List(const v8::Arguments& args);
+void EIO_List(uv_work_t* req);
+void EIO_AfterList(uv_work_t* req);
 
 v8::Handle<v8::Value> Open(const v8::Arguments& args);
 void EIO_Open(uv_work_t* req);
@@ -65,6 +71,20 @@ struct CloseBaton {
 public:
   int fd;
   v8::Persistent<v8::Value> callback;
+  char errorString[1024];
+};
+
+struct ListResultItem {
+public:
+  std::string comName;
+  std::string manufacturer;
+  std::string pnpId;
+};
+
+struct ListBaton {
+public:
+  v8::Persistent<v8::Value> callback;
+  std::list<ListResultItem*> results;
   char errorString[1024];
 };
 

@@ -1,6 +1,7 @@
 
 #include "serialport.h"
 #include <list>
+#include "win/disphelper.h"
 
 #ifdef WIN32
 
@@ -221,6 +222,67 @@ void EIO_Close(uv_work_t* req) {
     ErrorCodeToString("closing connection", GetLastError(), data->errorString);
     return;
   }
+}
+
+/*
+ * listComPorts.c -- list COM ports
+ *
+ * http://github.com/todbot/usbSearch/
+ *
+ * 2012, Tod E. Kurt, http://todbot.com/blog/
+ *
+ *
+ * Uses DispHealper : http://disphelper.sourceforge.net/
+ *
+ * Notable VIDs & PIDs combos:
+ * VID 0403 - FTDI
+ * 
+ * VID 0403 / PID 6001 - Arduino Diecimila
+ *
+ */
+void EIO_List(uv_work_t* req) {
+  ListBaton* data = static_cast<ListBaton*>(req->data);
+
+  DISPATCH_OBJ(wmiSvc);
+  DISPATCH_OBJ(colDevices);
+
+  dhInitialize(TRUE);
+  dhToggleExceptions(TRUE);
+ 
+  dhGetObject(L"winmgmts:{impersonationLevel=impersonate}!\\\\.\\root\\cimv2", NULL, &wmiSvc);
+  dhGetValue(L"%o", &colDevices, wmiSvc, L".ExecQuery(%S)", L"Select * from Win32_PnPEntity");
+
+  int port_count = 0;
+  FOR_EACH(objDevice, colDevices, NULL) {
+    char* name = NULL;
+    char* pnpid = NULL;
+    char* manu = NULL;
+    char* match;
+
+    dhGetValue(L"%s", &name,  objDevice, L".Name");
+    dhGetValue(L"%s", &pnpid, objDevice, L".PnPDeviceID");
+                                                
+    if( (match = strstr( name, "(COM" )) != NULL ) { // look for "(COM23)"
+      // 'Manufacturuer' can be null, so only get it if we need it
+      dhGetValue(L"%s", &manu, objDevice,  L".Manufacturer");
+      port_count++;
+      char* comname = strtok( match, "()");
+      ListResultItem* resultItem = new ListResultItem();
+      resultItem->comName = comname;
+      resultItem->manufacturer = manu;
+      resultItem->pnpId = pnpid;
+      data->results.push_back(resultItem);
+      dhFreeString(manu);
+    }
+        
+    dhFreeString(name);
+    dhFreeString(pnpid);
+  } NEXT(objDevice);
+    
+  SAFE_RELEASE(colDevices);
+  SAFE_RELEASE(wmiSvc);
+    
+  dhUninitialize(TRUE);
 }
 
 #endif
