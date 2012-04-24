@@ -44,6 +44,35 @@ void ErrorCodeToString(const char* prefix, int errorCode, char *errorStr) {
 
   dcb.fBinary = true;
   dcb.BaudRate = data->baudRate;
+  dcb.ByteSize = data->dataBits;
+  switch(data->parity) {
+  case SERIALPORT_PARITY_NONE:
+    dcb.Parity = NOPARITY;
+    break;
+  case SERIALPORT_PARITY_MARK:
+    dcb.Parity = MARKPARITY;
+    break;
+  case SERIALPORT_PARITY_EVEN:
+    dcb.Parity = EVENPARITY;
+    break;
+  case SERIALPORT_PARITY_ODD:
+    dcb.Parity = ODDPARITY;
+    break;
+  case SERIALPORT_PARITY_SPACE:
+    dcb.Parity = SPACEPARITY;
+    break;
+  }
+  switch(data->stopBits) {
+  case SERIALPORT_STOPBITS_ONE:
+    dcb.StopBits = ONESTOPBIT;
+    break;
+  case SERIALPORT_STOPBITS_ONE_FIVE:
+    dcb.StopBits = ONE5STOPBITS;
+    break;
+  case SERIALPORT_STOPBITS_TWO:
+    dcb.StopBits = TWOSTOPBITS;
+    break;
+  }
 
   if(!SetCommState(file, &dcb)) {
     ErrorCodeToString("SetCommState", GetLastError(), data->errorString);

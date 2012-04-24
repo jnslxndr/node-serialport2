@@ -26,6 +26,9 @@ v8::Handle<v8::Value> Open(const v8::Arguments& args) {
   memset(baton, 0, sizeof(OpenBaton));
   strcpy(baton->path, *path);
   baton->baudRate = options->Get(v8::String::New("baudRate"))->ToInt32()->Int32Value();
+  baton->dataBits = options->Get(v8::String::New("dataBits"))->ToInt32()->Int32Value();
+  baton->parity = ToParityEnum(options->Get(v8::String::New("parity"))->ToString());
+  baton->stopBits = ToStopBitEnum(options->Get(v8::String::New("stopBits"))->ToNumber()->NumberValue());
   baton->callback = v8::Persistent<v8::Value>::New(callback);
   baton->dataCallback = v8::Persistent<v8::Value>::New(options->Get(v8::String::New("dataCallback")));
   baton->errorCallback = v8::Persistent<v8::Value>::New(options->Get(v8::String::New("errorCallback")));
@@ -117,6 +120,36 @@ v8::Handle<v8::Value> Close(const v8::Arguments& args) {
   v8::HandleScope scope;
 
   return scope.Close(v8::Undefined());
+}
+
+SerialPortParity ToParityEnum(v8::Handle<v8::String>& v8str) {
+  v8::String::AsciiValue str(v8str);
+  if(!stricmp(*str, "none")) {
+    return SERIALPORT_PARITY_NONE;
+  }
+  if(!stricmp(*str, "even")) {
+    return SERIALPORT_PARITY_EVEN;
+  }
+  if(!stricmp(*str, "mark")) {
+    return SERIALPORT_PARITY_MARK;
+  }
+  if(!stricmp(*str, "odd")) {
+    return SERIALPORT_PARITY_ODD;
+  }
+  if(!stricmp(*str, "space")) {
+    return SERIALPORT_PARITY_SPACE;
+  }
+  return SERIALPORT_PARITY_NONE;
+}
+
+SerialPortStopBits ToStopBitEnum(double stopBits) {
+  if(stopBits > 1.4 && stopBits < 1.6) {
+    return SERIALPORT_STOPBITS_ONE_FIVE;
+  }
+  if(stopBits == 2) {
+    return SERIALPORT_STOPBITS_TWO;
+  }
+  return SERIALPORT_STOPBITS_ONE;
 }
 
 extern "C" {

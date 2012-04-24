@@ -6,6 +6,20 @@
 #include <v8.h>
 #include <node_buffer.h>
 
+enum SerialPortParity {
+  SERIALPORT_PARITY_NONE = 1,
+  SERIALPORT_PARITY_MARK = 2,
+  SERIALPORT_PARITY_EVEN = 3,
+  SERIALPORT_PARITY_ODD = 4,
+  SERIALPORT_PARITY_SPACE = 5
+};
+
+enum SerialPortStopBits {
+  SERIALPORT_STOPBITS_ONE = 1,
+  SERIALPORT_STOPBITS_ONE_FIVE = 2,
+  SERIALPORT_STOPBITS_TWO = 3
+};
+
 v8::Handle<v8::Value> Open(const v8::Arguments& args);
 void EIO_Open(uv_work_t* req);
 void EIO_AfterOpen(uv_work_t* req);
@@ -14,6 +28,8 @@ void EIO_Write(uv_work_t* req);
 void EIO_AfterWrite(uv_work_t* req);
 v8::Handle<v8::Value> Close(const v8::Arguments& args);
 void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> errorCallback);
+SerialPortParity ToParityEnum(v8::Handle<v8::String>& str);
+SerialPortStopBits ToStopBitEnum(double stopBits);
 
 struct OpenBaton {
 public:
@@ -23,6 +39,9 @@ public:
   v8::Persistent<v8::Value> errorCallback;
   int result;
   int baudRate;
+  int dataBits;
+  SerialPortParity parity;
+  SerialPortStopBits stopBits;
   char errorString[1024];
 };
 
