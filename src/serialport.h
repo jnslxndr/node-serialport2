@@ -7,6 +7,9 @@
 #include <node_buffer.h>
 #include <list>
 #include <string>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 enum SerialPortParity {
   SERIALPORT_PARITY_NONE = 1,
@@ -39,7 +42,7 @@ v8::Handle<v8::Value> Close(const v8::Arguments& args);
 void EIO_Close(uv_work_t* req);
 void EIO_AfterClose(uv_work_t* req);
 
-SerialPortParity ToParityEnum(v8::Handle<v8::String>& str);
+SerialPortParity ToParityEnum(const v8::Handle<v8::String>& str);
 SerialPortStopBits ToStopBitEnum(double stopBits);
 
 struct OpenBaton {

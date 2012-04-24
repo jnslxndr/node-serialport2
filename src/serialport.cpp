@@ -209,21 +209,21 @@ void EIO_AfterList(uv_work_t* req) {
   delete req;
 }
 
-SerialPortParity ToParityEnum(v8::Handle<v8::String>& v8str) {
+SerialPortParity ToParityEnum(const v8::Handle<v8::String>& v8str) {
   v8::String::AsciiValue str(v8str);
-  if(!stricmp(*str, "none")) {
+  if(!strcasecmp(*str, "none")) {
     return SERIALPORT_PARITY_NONE;
   }
-  if(!stricmp(*str, "even")) {
+  if(!strcasecmp(*str, "even")) {
     return SERIALPORT_PARITY_EVEN;
   }
-  if(!stricmp(*str, "mark")) {
+  if(!strcasecmp(*str, "mark")) {
     return SERIALPORT_PARITY_MARK;
   }
-  if(!stricmp(*str, "odd")) {
+  if(!strcasecmp(*str, "odd")) {
     return SERIALPORT_PARITY_ODD;
   }
-  if(!stricmp(*str, "space")) {
+  if(!strcasecmp(*str, "space")) {
     return SERIALPORT_PARITY_SPACE;
   }
   return SERIALPORT_PARITY_NONE;

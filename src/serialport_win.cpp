@@ -21,7 +21,7 @@ void ErrorCodeToString(const char* prefix, int errorCode, char *errorStr) {
   }
 }
 
-/*static*/ void EIO_Open(uv_work_t* req) {
+void EIO_Open(uv_work_t* req) {
   OpenBaton* data = static_cast<OpenBaton*>(req->data);
 
   HANDLE file = CreateFile(
@@ -175,7 +175,7 @@ void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8:
   uv_unref(uv_default_loop());
 }
 
-/*static*/ void EIO_Write(uv_work_t* req) {
+void EIO_Write(uv_work_t* req) {
   WriteBaton* data = static_cast<WriteBaton*>(req->data);
 
   DWORD bytesWritten;

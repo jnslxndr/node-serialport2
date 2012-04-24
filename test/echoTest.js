@@ -5,6 +5,8 @@ var assert = require('assert');
 
 var keepAlive = setTimeout(function () {console.log('timeout');}, 10000);
 
+var portName = (process.platform == 'win32') ? 'COM4' : '/dev/master';
+
 var readData = '';
 var sp = new SerialPort();
 sp.on('data', function (data) {
@@ -27,7 +29,7 @@ sp.on('error', function (err) {
   throw err;
 });
 
-sp.open("COM4", {
+sp.open(portName, {
   baudRate: 9600,
   dataBits: 8,
   parity: 'none',
