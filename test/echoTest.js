@@ -8,7 +8,7 @@ var keepAlive = setTimeout(function () {
   process.exit();
 }, 10000);
 
-var portName = (process.platform == 'win32') ? 'COM4' : '/dev/serial/by-id/usb-FTDI_FT232R_USB_UART_A800eFN5-if00-port0';
+var portName = (process.platform == 'win32') ? 'COM4' : '/dev/ttyUSB0';
 
 var readData = '';
 var sp = new SerialPort();
