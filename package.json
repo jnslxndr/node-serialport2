@@ -15,9 +15,10 @@
     "bindings": "0.3.0"
   },
   "devDependencies": {
+    "node-gyp": "0.4.1"
   },
   "scripts": {
-    "install": "node-gyp configure build"
+    "install": "node ./node_modules/node-gyp/bin/node-gyp.js configure build"
   },
   "main": "./index.js"
 }

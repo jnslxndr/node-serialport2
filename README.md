@@ -5,7 +5,6 @@ Node.js serial port driver. Works on Windows, OSX, and linux.
 # Install
 
 ```
-npm install -g node-gyp
 npm install serialport2
 ```
 
