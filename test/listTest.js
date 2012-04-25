@@ -7,8 +7,12 @@ serialport.list(function (err, results) {
   if (err) {
     throw err;
   }
-  for (var i = 0; i < results.length; i++) {
-    var item = results[i];
-    console.log(item.comName, '-', item.manufacturer, '-', item.pnpId);
+  if (results.length === 0) {
+    console.log("No ports found");
+  } else {
+    for (var i = 0; i < results.length; i++) {
+      var item = results[i];
+      console.log(item.comName, '-', item.manufacturer, '-', item.pnpId);
+    }
   }
 });
