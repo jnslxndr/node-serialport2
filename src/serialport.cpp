@@ -36,6 +36,7 @@ v8::Handle<v8::Value> Open(const v8::Arguments& args) {
   baton->flowControl = options->Get(v8::String::New("flowControl"))->ToBoolean()->BooleanValue();
   baton->callback = v8::Persistent<v8::Value>::New(callback);
   baton->dataCallback = v8::Persistent<v8::Value>::New(options->Get(v8::String::New("dataCallback")));
+  baton->disconnectedCallback = v8::Persistent<v8::Value>::New(options->Get(v8::String::New("disconnectedCallback")));
   baton->errorCallback = v8::Persistent<v8::Value>::New(options->Get(v8::String::New("errorCallback")));
 
   uv_work_t* req = new uv_work_t();
@@ -55,7 +56,7 @@ void EIO_AfterOpen(uv_work_t* req) {
   } else {
     argv[0] = v8::Undefined();
     argv[1] = v8::Int32::New(data->result);
-    AfterOpenSuccess(data->result, data->dataCallback, data->errorCallback);
+    AfterOpenSuccess(data->result, data->dataCallback, data->disconnectedCallback, data->errorCallback);
   }
   v8::Function::Cast(*data->callback)->Call(v8::Context::GetCurrent()->Global(), 2, argv);
 

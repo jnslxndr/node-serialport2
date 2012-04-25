@@ -15,6 +15,12 @@ void ErrorCodeToString(const char* prefix, int errorCode, char *errorStr) {
   case ERROR_INVALID_HANDLE:
     sprintf(errorStr, "%s: Invalid handle", prefix);
     break;
+  case ERROR_ACCESS_DENIED:
+    sprintf(errorStr, "%s: Access denied", prefix);
+    break;
+  case ERROR_OPERATION_ABORTED:
+    sprintf(errorStr, "%s: operation aborted", prefix);
+    break;
   default:
     sprintf(errorStr, "%s: Unknown error code %d", prefix, errorCode);
     break;
@@ -106,16 +112,23 @@ public:
   char buffer[100];
   char errorString[1000];
   DWORD errorCode;
+  bool disconnected;
   v8::Persistent<v8::Value> dataCallback;
   v8::Persistent<v8::Value> errorCallback;
+  v8::Persistent<v8::Value> disconnectedCallback;
 };
 
 void EIO_WatchPort(uv_work_t* req) {
   WatchPortBaton* data = static_cast<WatchPortBaton*>(req->data);
+  data->disconnected = false;
 
   while(true){
     if(!ReadFile(data->fd, data->buffer, 100, &data->bytesRead, NULL)) {
       data->errorCode = GetLastError();
+      if(data->errorCode == ERROR_OPERATION_ABORTED) {
+        data->disconnected = true;
+        return;
+      }
       ErrorCodeToString("ReadFile", GetLastError(), data->errorString);
       return;
     }
@@ -138,6 +151,11 @@ bool IsClosingHandle(int fd) {
 void EIO_AfterWatchPort(uv_work_t* req) {
   uv_ref(uv_default_loop());
   WatchPortBaton* data = static_cast<WatchPortBaton*>(req->data);
+  if(data->disconnected) {
+    v8::Handle<v8::Value> argv[1];
+    v8::Function::Cast(*data->disconnectedCallback)->Call(v8::Context::GetCurrent()->Global(), 0, argv);
+    goto cleanup;
+  }
   if(data->bytesRead > 0) {
     v8::Handle<v8::Value> argv[1];
     argv[0] = node::Buffer::New(data->buffer, data->bytesRead)->handle_;
@@ -149,9 +167,10 @@ void EIO_AfterWatchPort(uv_work_t* req) {
       v8::Handle<v8::Value> argv[1];
       argv[0] = v8::Exception::Error(v8::String::New(data->errorString));
       v8::Function::Cast(*data->errorCallback)->Call(v8::Context::GetCurrent()->Global(), 1, argv);
+      Sleep(100); // prevent the errors from occurring too fast
     }
   }
-  AfterOpenSuccess((int)data->fd, data->dataCallback, data->errorCallback);
+  AfterOpenSuccess((int)data->fd, data->dataCallback, data->disconnectedCallback, data->errorCallback);
 
 cleanup:
   data->dataCallback.Dispose();
@@ -160,12 +179,13 @@ cleanup:
   delete req;
 }
 
-void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> errorCallback) {
+void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> disconnectedCallback, v8::Handle<v8::Value> errorCallback) {
   WatchPortBaton* baton = new WatchPortBaton();
   memset(baton, 0, sizeof(WatchPortBaton));
   baton->fd = (HANDLE)fd;
   baton->dataCallback = v8::Persistent<v8::Value>::New(dataCallback);
   baton->errorCallback = v8::Persistent<v8::Value>::New(errorCallback);
+  baton->disconnectedCallback = v8::Persistent<v8::Value>::New(disconnectedCallback);
 
   uv_work_t* req = new uv_work_t();
   req->data = baton;

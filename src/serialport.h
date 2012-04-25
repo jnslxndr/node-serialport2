@@ -32,7 +32,7 @@ void EIO_AfterList(uv_work_t* req);
 v8::Handle<v8::Value> Open(const v8::Arguments& args);
 void EIO_Open(uv_work_t* req);
 void EIO_AfterOpen(uv_work_t* req);
-void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> errorCallback);
+void AfterOpenSuccess(int fd, v8::Handle<v8::Value> dataCallback, v8::Handle<v8::Value> disconnectedCallback, v8::Handle<v8::Value> errorCallback);
 
 v8::Handle<v8::Value> Write(const v8::Arguments& args);
 void EIO_Write(uv_work_t* req);
@@ -50,6 +50,7 @@ public:
   char path[1024];
   v8::Persistent<v8::Value> callback;
   v8::Persistent<v8::Value> dataCallback;
+  v8::Persistent<v8::Value> disconnectedCallback;
   v8::Persistent<v8::Value> errorCallback;
   int result;
   int baudRate;

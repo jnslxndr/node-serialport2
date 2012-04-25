@@ -33,7 +33,7 @@ sp.on('close', function (err) {
 });
 
 sp.on('error', function (err) {
-  throw err;
+  console.error("error", err);
 });
 
 sp.on('open', function() {
