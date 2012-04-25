@@ -12,7 +12,8 @@
   "license": "MIT",
   "repository": { "type": "git", "url": "https://github.com/joeferner/node-serialport2.git" },
   "dependencies": {
-    "bindings": "0.3.0"
+    "bindings": "0.3.0",
+    "async": "0.1.18"
   },
   "devDependencies": {
     "node-gyp": "0.4.1"
