@@ -13,7 +13,7 @@ var portName;
 if (process.platform == 'win32') {
   portName = 'COM4';
 } else if (process.platform == 'darwin') {
-  portName = '/dev/tty.usbserial-A800eFN5';
+  portName = '/dev/cu.usbserial-A800eFN5';
 } else {
   portName = '/dev/ttyUSB0';
 }
