@@ -3,7 +3,7 @@
   "description": "node.js serial port driver.",
   "author": "Joe Ferner <joe.ferner@nearinfinity.com>",
   "keywords": ["serial", "serialport", "com", "comport", "arduino"],
-  "version": "0.0.2",
+  "version": "0.0.3",
   "engines": { "node" : ">=0.6.0" },
   "maintainers": [
     { "name": "Joe Ferner", "email": "joe.ferner@nearinfinity.com" }
