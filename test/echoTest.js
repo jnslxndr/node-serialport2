@@ -8,7 +8,15 @@ var keepAlive = setTimeout(function () {
   process.exit();
 }, 10000);
 
-var portName = (process.platform == 'win32') ? 'COM4' : '/dev/ttyUSB0';
+var portName;
+
+if (process.platform == 'win32') {
+  portName = 'COM4';
+} else if (process.platform == 'darwin') {
+  portName = '/dev/tty.usbserial-A800eFN5';
+} else {
+  portName = '/dev/ttyUSB0';
+}
 
 var readData = '';
 var sp = new SerialPort();
@@ -36,7 +44,7 @@ sp.on('error', function (err) {
   console.error("error", err);
 });
 
-sp.on('open', function() {
+sp.on('open', function () {
   console.log('port opened... Press reset on the Arduino.');
 });
 
